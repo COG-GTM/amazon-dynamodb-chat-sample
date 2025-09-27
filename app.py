@@ -4,8 +4,8 @@ import os
 import re
 
 from chalice import Chalice, Response
-from chalicelib.ddb import DdbChat
-from chalicelib.ddb import create_connection
+from chalicelib.mongodb import MongoChat
+from chalicelib.mongodb import create_connection
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -16,7 +16,7 @@ app = Chalice(app_name='dynamodb-python-chat-sample')
 def index():
     # server status check URI
     ddbTable = create_connection('chat')
-    ddbclient = DdbChat()
+    ddbclient = MongoChat()
     result = ddbclient.putComment(ddbTable, 'oranie', 'done', 'chat-room')
     logging.info(result)
 
@@ -46,7 +46,7 @@ def comment_add():
     logging.info('add request POST request Body : %s', body)
 
     ddbTable = create_connection('chat')
-    ddbclient = DdbChat()
+    ddbclient = MongoChat()
 
     response = ddbclient.putComment(ddbTable, body['name'], body['comment'], 'chat')
     logging.info('add request response is  : %s', response)
@@ -57,7 +57,7 @@ def comment_add():
 @app.route('/chat/comments/latest', methods=['GET'], cors=True)
 def comment_list_get():
     ddbTable = create_connection('chat')
-    ddbclient = DdbChat()
+    ddbclient = MongoChat()
 
     response = ddbclient.getLatestComments(ddbTable, 'chat', 20)
     logging.info('latest response : %s', response)
@@ -68,7 +68,7 @@ def comment_list_get():
 @app.route('/chat/comments/all', methods=['GET'], cors=True)
 def comment_all_get():
     ddbTable = create_connection('chat')
-    ddbclient = DdbChat()
+    ddbclient = MongoChat()
 
     response = ddbclient.getAllComments(ddbTable, 'chat')
 
@@ -83,7 +83,7 @@ def comment_range_get(latest_seq_id):
     # To get next comments
 
     ddbTable = create_connection('chat')
-    ddbclient = DdbChat()
+    ddbclient = MongoChat()
 
     response = ddbclient.getRangeComments(ddbTable, 'chat', latest_seq_id)
     logging.info('latest comments next id response : %s', response)

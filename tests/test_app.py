@@ -36,7 +36,7 @@ def test_put_add_comment(client):
                            body=json.dumps({'name': 'oranie', 'comment': 'test done'}))
 
     client_mongo = MongoClient('mongodb://localhost:27017/')
-    db = client_mongo.chat_app_test
+    db = client_mongo.chat_app
     collection = db.chat
 
     get_result = collection.find_one({
@@ -63,7 +63,7 @@ def test_mongodb_connection():
 def test_mongodb_indexing():
     """Test that MongoDB indexes are properly created"""
     client = MongoClient('mongodb://localhost:27017/')
-    db = client.chat_app_test
+    db = client.chat_app
     collection = db.chat
 
     indexes = list(collection.list_indexes())

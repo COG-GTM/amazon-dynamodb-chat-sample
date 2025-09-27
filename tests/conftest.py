@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from app import app as chalice_app
 
 COLLECTION_NAME = 'chat'
-DB_NAME = 'chat_app_test'
+DB_NAME = 'chat_app'
 
 
 def get_test_mongodb_client():

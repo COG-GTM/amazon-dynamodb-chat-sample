@@ -28,13 +28,13 @@ def chat():
     # Demo html
     with open("./chalicelib/livechat.html", "r") as html:
         base_lines = html.read()
-        if os.environ['API_ENDPOINT'] == 'localhost':
+        if os.environ.get('MONGODB_URI', '').startswith('mongodb://localhost'):
             logging.info('return local envroiment html')
             lines = base_lines
         else:
             logging.info('return dev envroiment html')
             lines = re.sub(
-                'http://localhost:8080/', os.environ['API_ENDPOINT'], base_lines)
+                'http://localhost:8080/', os.environ.get('API_ENDPOINT', ''), base_lines)
 
     return Response(body=str(lines), status_code=200,
                     headers={'Content-Type': 'text/html', "Access-Control-Allow-Origin": "*"})

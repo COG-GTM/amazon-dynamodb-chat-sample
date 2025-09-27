@@ -3,114 +3,92 @@ import logging
 import os
 from datetime import datetime
 
-import boto3
-from boto3.dynamodb.conditions import Key
+from pymongo import MongoClient, DESCENDING
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-def create_connection(table_name):
-    ddb = None
-    if os.getenv('API_ENDPOINT') != 'localhost':
-        ddb = boto3.resource('dynamodb')
-    else:
-        ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+def create_connection(collection_name):
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
+    client = MongoClient(mongodb_uri)
+    db = client.chat_app
+    collection = db[collection_name]
 
-    ddb_table = ddb.Table(table_name)
-    return ddb_table
+    collection.create_index([("chat_room", 1), ("time", -1)])
+    collection.create_index([("name", 1), ("time", 1)], unique=True)
+
+    return collection
 
 
 class DdbChat():
-    def putComment(self, table, name, comment, chat_room):
-        logging.info('PutComments params : %s %s %s %s', table, name, comment, chat_room)
+    def putComment(self, collection, name, comment, chat_room):
+        logging.info('PutComments params : %s %s %s %s', collection, name, comment, chat_room)
         now = str(datetime.now().timestamp())
 
-        result = table.put_item(
-            Item={
+        try:
+            collection.insert_one({
                 'name': name,
                 'time': now,
                 'comment': comment,
                 'chat_room': chat_room
-            },
-            ReturnValues='ALL_OLD',
-            ReturnConsumedCapacity='TOTAL',
-            ExpressionAttributeNames={'#T': 'time', '#N': 'name'},
-            ConditionExpression='attribute_not_exists(#T) And attribute_not_exists(#N)'
-        )
-        result['time'] = now
-        logging.info('put_item result :' + str(result))
+            })
 
-        return result
+            response = {
+                'time': now,
+                'ResponseMetadata': {'HTTPStatusCode': 200}
+            }
+            logging.info('insert_one result :' + str(response))
+            return response
 
-    def getLatestComments(self, table, chat_room, item_count):
-        logging.info('getLatestComments params : %s %s', table, chat_room)
+        except Exception as e:
+            logging.error('Error inserting comment: %s', str(e))
+            raise
 
-        response = table.query(
-            IndexName='chat_room_time_idx',
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('chat_room').eq(chat_room),
-            ScanIndexForward=False,
-            Limit=item_count
-        )
+    def getLatestComments(self, collection, chat_room, item_count):
+        logging.info('getLatestComments params : %s %s', collection, chat_room)
+
+        cursor = collection.find(
+            {'chat_room': chat_room}
+        ).sort('time', DESCENDING).limit(item_count)
+
+        items = list(cursor)
+
+        for item in items:
+            item.pop('_id', None)
+
+        response = {
+            'Items': items,
+            'Count': len(items)
+        }
 
         return response
 
-    def getRangeComments(self, table, chat_room, position):
-        logging.info('getRangeComments params : %s %s %s', table, chat_room, str(position))
+    def getRangeComments(self, collection, chat_room, position):
+        logging.info('getRangeComments params : %s %s %s', collection, chat_room, str(position))
 
-        result = []
+        cursor = collection.find({
+            'chat_room': chat_room,
+            'time': {'$gt': position}
+        }).sort('time', DESCENDING)
 
-        response = table.query(
-            IndexName='chat_room_time_idx',
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('chat_room').eq(chat_room) & Key('time').gt(position),
-            ScanIndexForward=False
-        )
-        for index, item in enumerate(response['Items']):
-            result.append(item)
+        result = list(cursor)
 
-        while 'LastEvaluatedKey' in response:
-            print('LastEvaluatedKey Hit!!!')
-            response = table.query(
-                IndexName='chat_room_time_idx',
-                Select='ALL_ATTRIBUTES',
-                KeyConditionExpression=Key('chat_room').eq(chat_room) & Key('time').gt(position),
-                ScanIndexForward=False,
-                ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-
-            for index, item in enumerate(response['Items']):
-                result.append(item)
+        for item in result:
+            item.pop('_id', None)
 
         return result
 
-    def getAllComments(self, table, chat_room):
-        logging.info('getAllComments params : %s %s', table, chat_room)
+    def getAllComments(self, collection, chat_room):
+        logging.info('getAllComments params : %s %s', collection, chat_room)
 
-        result = []
+        cursor = collection.find(
+            {'chat_room': chat_room}
+        ).sort('time', DESCENDING)
 
-        response = table.query(
-            IndexName='chat_room_time_idx',
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('chat_room').eq(chat_room),
-            ScanIndexForward=False
-        )
+        result = list(cursor)
 
-        for index, item in enumerate(response['Items']):
-            result.append(item)
-
-        while 'LastEvaluatedKey' in response:
-            print('LastEvaluatedKey Hit!!!')
-            response = table.query(
-                IndexName='chat_room_time_idx',
-                Select='ALL_ATTRIBUTES',
-                KeyConditionExpression=Key('chat_room').eq(chat_room),
-                ScanIndexForward=False,
-                ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-
-            for index, item in enumerate(response['Items']):
-                result.append(item)
+        for item in result:
+            item.pop('_id', None)
 
         return result
 

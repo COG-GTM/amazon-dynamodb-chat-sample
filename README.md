@@ -21,22 +21,21 @@ Python 3.7.3+
 Please read Chalice project doc.
 https://github.com/aws/chalice
 
-local test needs DynamoDB Local.
-https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/DynamoDBLocal.html
+local test needs MongoDB Local.
+https://docs.mongodb.com/manual/installation/
 
-If you set API_ENDPOINT environment value 'localhost' is using DynamoDB Local 
- (ex: export API_ENDPOINT=localhost)
+If you set MONGODB_URI environment value 'mongodb://localhost:27017' is using MongoDB Local 
+ (ex: export MONGODB_URI=mongodb://localhost:27017)
  
-# Amazon DynamoDB setting
-DynamoDB Local 
+# MongoDB setting
+MongoDB Local 
 ```
- aws dynamodb create-table \
-     --endpoint-url http://localhost:8000\
-     --table-name chat \
-     --attribute-definitions AttributeName=name,AttributeType=S AttributeName=time,AttributeType=S AttributeName=chat_room,AttributeType=S\
-     --key-schema KeyType=HASH,AttributeName=name KeyType=RANGE,AttributeName=time\
-     --global-secondary-indexes 'IndexName=chat_room_time_idx,KeySchema=[{AttributeName=chat_room,KeyType=HASH},{AttributeName=time,KeyType=RANGE}],ProvisionedThroughput={ReadCapacityUnits=1,WriteCapacityUnits=1},Projection={ProjectionType=ALL}' \
-     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+# Start MongoDB locally (using Docker)
+docker run --name mongodb-chat -p 27017:27017 -d mongo:latest
+
+# Or install MongoDB locally and start the service
+# MongoDB will automatically create the database and collection when first accessed
+# Indexes will be created automatically by the application
 ```
 
 DynamoDB
@@ -56,11 +55,11 @@ https://github.com/aws/chalice#credentials
 
 ### local app start
 ```$xslt
-If you set API_ENDPOINT environment value 'localhost' is using DynamoDB Local 
- (ex: export API_ENDPOINT=localhost)
+If you set MONGODB_URI environment value 'mongodb://localhost:27017' is using MongoDB Local 
+ (ex: export MONGODB_URI=mongodb://localhost:27017)
 
- # example : DynamoDB local setup command
- java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -port 8000 -inMemory
+ # example : MongoDB local setup command
+ docker run --name mongodb-chat -p 27017:27017 -d mongo:latest
 
  # chalice local start up
  chalice local --stage local --port 8080

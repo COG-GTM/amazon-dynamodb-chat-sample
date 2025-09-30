@@ -15,6 +15,48 @@ else:
 
 table = ddb.Table(DDB_TABLE_NAME)
 
+MONGO_COLLECTION_NAME = 'chat'
+
+try:
+    import pymongo
+
+    mongo_client = pymongo.MongoClient('mongodb://localhost:27017', serverSelectionTimeoutMS=2000)
+    mongo_db = mongo_client.chat_db_test
+    mongo_collection = mongo_db[MONGO_COLLECTION_NAME]
+    mongo_client.server_info()
+    MONGODB_AVAILABLE = True
+except (ImportError, pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.ConnectionFailure):
+    MONGODB_AVAILABLE = False
+    mongo_collection = None
+
+
+def _create_test_mongo_collection():
+    if MONGODB_AVAILABLE:
+        mongo_collection.create_index([('name', 1), ('time', 1)], unique=True)
+        mongo_collection.create_index([('chat_room', 1), ('time', -1)])
+    return mongo_collection
+
+
+def mongo_test_data_put():
+    if MONGODB_AVAILABLE:
+        mongo_collection.insert_one({
+            'name': 'test_name',
+            'time': 'test_time',
+            'comment': 'test_data',
+            'chat_room': 'test_chat'
+        })
+
+
+@pytest.fixture(autouse=True, scope='session')
+def mongo_collection_fixture():
+    if MONGODB_AVAILABLE:
+        _create_test_mongo_collection()
+        mongo_test_data_put()
+        yield mongo_collection
+        mongo_collection.drop()
+    else:
+        yield None
+
 
 @pytest.fixture
 def app():

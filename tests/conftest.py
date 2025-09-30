@@ -9,7 +9,9 @@ from app import app as chalice_app
 DDB_TABLE_NAME = 'chat'  # TODO: Better to acquire from other constant or configured env var
 
 if os.environ['API_ENDPOINT'] == 'localhost':
-    ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+    ddb = boto3.resource('dynamodb',
+                        endpoint_url='http://localhost:8000',
+                        region_name=os.environ.get('AWS_DEFAULT_REGION', 'ap-northeast-1'))
 else:
     ddb = boto3.resource('dynamodb')
 

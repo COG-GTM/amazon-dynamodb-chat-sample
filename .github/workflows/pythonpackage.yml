@@ -31,7 +31,7 @@ jobs:
         run: |
           wget https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz
           tar zxvf ./dynamodb_local_latest.tar.gz
-          nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -inMemory & disown $!
+          nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -inMemory -sharedDb & disown $!
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -47,5 +47,6 @@ jobs:
           AWS_DEFAULT_REGION: ap-northeast-1
           AWS_ACCESS_KEY_ID: test_user
           AWS_SECRET_ACCESS_KEY: test_key
+          AWS_ACCOUNT_ID_ENDPOINT_MODE: disabled
           DYNAMODB_ENDPOINT: 'http://localhost:8000'
           API_ENDPOINT: localhost

@@ -3,6 +3,7 @@ import json
 from http import HTTPStatus
 
 import boto3
+import pytest
 
 
 def test_get_all_comments(client):
@@ -52,3 +53,76 @@ def test_put_add_comment(client):
     assert 'time' in response.json
     assert 'oranie' in get_result['Item']['name']
     assert 'test done' in get_result['Item']['comment']
+
+
+def test_mongo_get_all_comments(mongo_collection_fixture):
+    if mongo_collection_fixture is None:
+        pytest.skip("MongoDB not available")
+
+    from chalicelib.mongodb import MongoChat
+    mongo_chat = MongoChat()
+
+    result = mongo_chat.getAllComments(mongo_collection_fixture, 'test_chat')
+
+    assert isinstance(result, list)
+    assert len(result) > 0
+    assert 'name' in result[0]
+    assert 'comment' in result[0]
+    assert '_id' not in result[0]
+
+
+def test_mongo_get_latest_comment(mongo_collection_fixture):
+    if mongo_collection_fixture is None:
+        pytest.skip("MongoDB not available")
+
+    from chalicelib.mongodb import MongoChat
+    mongo_chat = MongoChat()
+
+    result = mongo_chat.getLatestComments(mongo_collection_fixture, 'test_chat', 20)
+
+    assert 'Items' in result
+    assert 'Count' in result
+    assert isinstance(result['Items'], list)
+    if len(result['Items']) > 0:
+        assert '_id' not in result['Items'][0]
+
+
+def test_mongo_get_range_comment(mongo_collection_fixture):
+    if mongo_collection_fixture is None:
+        pytest.skip("MongoDB not available")
+
+    from chalicelib.mongodb import MongoChat
+    mongo_chat = MongoChat()
+
+    result = mongo_chat.getRangeComments(mongo_collection_fixture, 'test_chat', '0')
+
+    assert isinstance(result, list)
+    if len(result) > 0:
+        assert '_id' not in result[0]
+
+
+def test_mongo_put_add_comment(mongo_collection_fixture):
+    if mongo_collection_fixture is None:
+        pytest.skip("MongoDB not available")
+
+    from chalicelib.mongodb import MongoChat
+    mongo_chat = MongoChat()
+
+    result = mongo_chat.putComment(
+        mongo_collection_fixture,
+        'test_user_mongo',
+        'test comment from mongo',
+        'test_chat'
+    )
+
+    assert 'time' in result
+    assert 'ResponseMetadata' in result
+
+    inserted = mongo_collection_fixture.find_one({
+        'name': 'test_user_mongo',
+        'time': result['time']
+    })
+
+    assert inserted is not None
+    assert inserted['comment'] == 'test comment from mongo'
+    assert inserted['chat_room'] == 'test_chat'

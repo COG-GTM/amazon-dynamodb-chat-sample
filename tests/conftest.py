@@ -3,10 +3,13 @@ import os
 
 import boto3
 import pytest
+import pymongo
 
 from app import app as chalice_app
 
-DDB_TABLE_NAME = 'chat'  # TODO: Better to acquire from other constant or configured env var
+DDB_TABLE_NAME = 'chat'
+MONGO_COLLECTION_NAME = 'chat'
+MONGO_DB_NAME = 'chat_db_test'
 
 if os.environ['API_ENDPOINT'] == 'localhost':
     ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
@@ -98,3 +101,30 @@ def ddb_table():
     yield table
     table.delete()
     table.wait_until_not_exists()
+
+
+@pytest.fixture(scope='session')
+def mongo_client():
+    client = pymongo.MongoClient('mongodb://localhost:27017')
+    yield client
+    client.close()
+
+
+@pytest.fixture(scope='session')
+def mongo_collection(mongo_client):
+    db = mongo_client[MONGO_DB_NAME]
+    collection = db[MONGO_COLLECTION_NAME]
+
+    collection.create_index([('name', pymongo.ASCENDING), ('time', pymongo.ASCENDING)], unique=True)
+    collection.create_index([('chat_room', pymongo.ASCENDING), ('time', pymongo.DESCENDING)])
+
+    collection.insert_one({
+        'name': 'test_name',
+        'time': 'test_time',
+        'comment': 'test_data',
+        'chat_room': 'test_chat'
+    })
+
+    yield collection
+
+    collection.drop()

@@ -5,6 +5,9 @@ import re
 
 from chalice import Chalice, Response
 from chalicelib.ddb import DdbChat
+# from chalicelib.mongodb import MongoChat
+# from chalicelib.mongodb import create_connection as mongo_create_connection
+
 from chalicelib.ddb import create_connection
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)

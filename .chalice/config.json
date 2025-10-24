@@ -7,12 +7,14 @@
         "local": {
           "api_gateway_stage": "api",
             "environment_variables": {
-                "API_ENDPOINT": "localhost"
+                "API_ENDPOINT": "localhost",
+                "MONGODB_URI": "mongodb://localhost:27017"
             }
         },
       "dev": {
         "environment_variables": {
-                "API_ENDPOINT": "https://your_API_ENDPOINT"
+                "API_ENDPOINT": "https://your_API_ENDPOINT",
+                "MONGODB_URI": "mongodb://localhost:27017"
             }
         }
     }

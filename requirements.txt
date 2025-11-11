@@ -1,7 +1,6 @@
 pytest
-boto3
+pymongo
 chalice
 flake8
-moto
 pytest-chalice
 pytest-env

@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 import os
 
-import boto3
+from pymongo import MongoClient, ASCENDING, DESCENDING
 import pytest
 
 from app import app as chalice_app
 
-DDB_TABLE_NAME = 'chat'  # TODO: Better to acquire from other constant or configured env var
+COLLECTION_NAME = 'chat'
 
 if os.environ['API_ENDPOINT'] == 'localhost':
-    ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+    client = MongoClient('mongodb://localhost:27017')
 else:
-    ddb = boto3.resource('dynamodb')
+    mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017')
+    client = MongoClient(mongodb_uri)
 
-table = ddb.Table(DDB_TABLE_NAME)
+db = client['chat_db']
+collection = db[COLLECTION_NAME]
 
 
 @pytest.fixture
@@ -21,80 +23,25 @@ def app():
     return chalice_app
 
 
-def _create_test_ddb_table():
-    return ddb.create_table(
-        TableName=DDB_TABLE_NAME,
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'name',
-                'AttributeType': 'S',
-            },
-            {
-                'AttributeName': 'time',
-                'AttributeType': 'S',
-            },
-            {
-                'AttributeName': 'chat_room',
-                'AttributeType': 'S',
-            },
-        ],
-        KeySchema=[
-            {
-                'AttributeName': 'name',
-                'KeyType': 'HASH',
-            },
-            {
-                'AttributeName': 'time',
-                'KeyType': 'RANGE',
-            },
-        ],
-        GlobalSecondaryIndexes=[{
-            'IndexName': 'chat_room_time_idx',
-            'KeySchema': [
-                {
-                    'AttributeName': 'chat_room',
-                    'KeyType': 'HASH',
-                },
-                {
-                    'AttributeName': 'time',
-                    'KeyType': 'RANGE',
-                },
-            ],
-            'Projection': {
-                'ProjectionType': 'ALL',
-            },
-            'ProvisionedThroughput': {
-                'ReadCapacityUnits': 100,
-                'WriteCapacityUnits': 100
-            }
-        }],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 100,
-            'WriteCapacityUnits': 100
-        },
-
-    )
+def _create_test_mongodb_collection():
+    collection.create_index([('chat_room', ASCENDING), ('time', DESCENDING)], name='chat_room_time_idx')
+    collection.create_index([('name', ASCENDING), ('time', ASCENDING)], unique=True, name='name_time_idx')
+    return collection
 
 
-def ddb_test_data_put():
-    table.put_item(
-        Item={
-            'name': 'test_name',
-            'time': 'test_time',
-            'comment': 'test_data',
-            'chat_room': 'test_chat'
-        },
-        ReturnValues='ALL_OLD',
-        ReturnConsumedCapacity='TOTAL'
-    )
+def mongodb_test_data_put():
+    collection.insert_one({
+        'name': 'test_name',
+        'time': 'test_time',
+        'comment': 'test_data',
+        'chat_room': 'test_chat'
+    })
 
 
 @pytest.fixture(autouse=True, scope='session')
 def ddb_table():
-    _create_test_ddb_table()
-    table.wait_until_exists()
-    ddb_test_data_put()
+    _create_test_mongodb_collection()
+    mongodb_test_data_put()
 
-    yield table
-    table.delete()
-    table.wait_until_not_exists()
+    yield collection
+    collection.drop()

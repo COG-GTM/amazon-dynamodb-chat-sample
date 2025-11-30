@@ -5,3 +5,4 @@ flake8
 moto
 pytest-chalice
 pytest-env
+werkzeug>=3.1.4 # not directly required, pinned by Snyk to avoid a vulnerability

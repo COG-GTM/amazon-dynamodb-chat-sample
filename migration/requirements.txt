@@ -1,0 +1,11 @@
+# Migration Script Dependencies
+# Install with: pip install -r requirements.txt
+
+# MongoDB driver
+pymongo>=4.0.0
+
+# AWS SDK (for DynamoDB access)
+boto3>=1.26.0
+
+# Note: boto3 is already in the main project requirements.txt
+# but included here for standalone migration script usage

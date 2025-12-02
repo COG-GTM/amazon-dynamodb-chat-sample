@@ -37,6 +37,16 @@ jobs:
           wget https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz
           tar zxvf ./dynamodb_local_latest.tar.gz
           nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -inMemory & disown $!
+          # Wait for DynamoDB Local to be ready
+          echo "Waiting for DynamoDB Local to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000 > /dev/null 2>&1; then
+              echo "DynamoDB Local is ready!"
+              break
+            fi
+            echo "Attempt $i: DynamoDB Local not ready yet, waiting..."
+            sleep 1
+          done
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names

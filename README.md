@@ -52,7 +52,17 @@ tar xzf dynamodb_local_latest.tar.gz
 java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -port 8000 -inMemory
 ```
 
-3. **Create the chat table in DynamoDB Local:**
+3. **Set up AWS credentials for DynamoDB Local:**
+
+DynamoDB Local requires AWS credentials (they can be any values for local development):
+
+```bash
+export AWS_ACCESS_KEY_ID=fakeMyKeyId
+export AWS_SECRET_ACCESS_KEY=fakeSecretAccessKey
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+4. **Create the chat table in DynamoDB Local:**
 
 ```bash
 aws dynamodb create-table \
@@ -70,14 +80,14 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 ```
 
-4. **Set the environment variable and start the Chalice local server:**
+5. **Set the environment variable and start the Chalice local server:**
 
 ```bash
 export API_ENDPOINT=localhost
 chalice local --stage local --port 8080
 ```
 
-5. **Access the chat application:**
+6. **Access the chat application:**
 
 Open your browser and navigate to `http://localhost:8080/chat`
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import threading
 from datetime import datetime
 
 import boto3
@@ -9,9 +10,22 @@ from boto3.dynamodb.conditions import Key
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
+_local = threading.local()
+
+
 def create_connection(table_name):
+    # boto3 resources are not thread-safe, so each thread keeps its own.
+    endpoint = os.getenv('API_ENDPOINT')
+    tables = _local.__dict__.setdefault('tables', {})
+    key = (table_name, endpoint)
+    if key not in tables:
+        tables[key] = _new_table(table_name, endpoint)
+    return tables[key]
+
+
+def _new_table(table_name, endpoint):
     ddb = None
-    if os.getenv('API_ENDPOINT') != 'localhost':
+    if endpoint != 'localhost':
         ddb = boto3.resource('dynamodb')
     else:
         ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')

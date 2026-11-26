@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import functools
 import logging
 import os
 from datetime import datetime
@@ -9,6 +10,7 @@ from boto3.dynamodb.conditions import Key
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
+@functools.lru_cache(maxsize=None)
 def create_connection(table_name):
     ddb = None
     if os.getenv('API_ENDPOINT') != 'localhost':
